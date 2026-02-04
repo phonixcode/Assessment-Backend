@@ -29,11 +29,16 @@ npm start
 
 ## Wallet flow (A)
 
-1. **Create user** :– `POST /api/users` with `{ "username": "alice" }`. Returns `user.id` and `wallet.id`, `wallet.walletNumber` (balance 0). Each wallet gets a unique **wallet number** (e.g. `WN1234567890`). All **id** values are UUIDs (stored as UUID strings in the `id` column).
+1. **Create user** – `POST /api/users` with `{ "username": "alice" }`. Returns `user.id` and `wallet.id`, `wallet.walletNumber` (balance 0). Each wallet gets a unique **wallet number** (e.g. `WN1234567890`). All **id** values are UUIDs (stored as UUID strings in the `id` column).
 2. **Fund wallet** – `POST /api/wallets/:id/fund` with `{ "amountCents": 10000 }`. `:id` is the wallet id (UUID).
 3. **Transfer** – `POST /api/transfer` with `Idempotency-Key` header and body `{ "fromUserId": "<user-id>", "toUserId": "<user-id>", "amountCents": 1000 }`. `fromUserId` / `toUserId` are user ids (UUIDs). Idempotent: same key returns same result without double-spending.
 
-column names are **id**, **userId**, **walletId**; the values stored in those columns are **UUID strings** (no integer ids).
+Column names are **id**, **userId**, **walletId**; the values stored in those columns are **UUID strings** (no integer ids).
+
+## Interest flow (B)
+
+1. **Accrue interest** – `POST /api/interest/accrue` with `{ "walletId": "<uuid>", "balanceCentsAtEod": 100000, "interestDate": "2024-06-15" }`. Wallet must exist. Daily rate = 27.5% ÷ days in that year (366 for leap, 365 otherwise). Interest is `floor(balanceCentsAtEod × dailyRate)` in cents. One record per (wallet, date); duplicate calls for the same wallet/date return the same result and do not double-credit.
+2. **List interest records** – `GET /api/interest/records?walletId=<uuid>&limit=50` to see accrued interest per wallet (optional `walletId` filter).
 
 ## API summary
 
